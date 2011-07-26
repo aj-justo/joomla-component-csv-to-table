@@ -16,7 +16,7 @@ class csvToTable {
 	 */
 	var $_DELIMITER = ',';
 	var $_LINELENGTH = 10000;
-	var $_ENCLOSURE = '""';
+	var $_ENCLOSURE = '"';
 	var $_ESCAPE = '\\';
 
 	/**
@@ -75,6 +75,13 @@ class csvToTable {
 	var $_DB_prepareQueryObject = False;
 	var $_DB_execQueryObject = False;
 	
+	/**
+	 * names of the columns either passed in csv first line
+	 * or added automatically (col1, col2, col3)
+	 * @access private
+	 */
+	var $_columnNames = array();
+	
 	var $_debug = False;
 	
 	
@@ -85,9 +92,11 @@ class csvToTable {
 	}
 	
 	function readCsv($csvFile, $_csvHasColNames=True) {
-		$this->_csvHasColNames = $_csvHasColNames;	
+		$this->_csvHasColNames = $_csvHasColNames;			
+		
 		$this->_csvArray = Array();
 		$this->_csvHandle = False;	
+		
 		try {
 			// suppose we are given a file path
 			$this -> _openCsv($csvFile);
@@ -98,32 +107,38 @@ class csvToTable {
 			} catch(csvToTableException $e) {
 				exit($e);
 			}
-			if($this->_debug) $this->__debuggingTool(__FUNCTION__, 'csvToTableException: passed argument was not a csv file, tried with csv formatted string');
-		}
+			if($this->_debug) $this->_debuggingTool(__FUNCTION__, 'csvToTableException: passed argument was not a csv file, tried with csv formatted string');
+		}		
+		if($this->_csvHasColNames) $this->_getColumnNames();
 		if( $this->_csvHandle ) return $this->_csvHandle;
 		else return $this->_csvArray;
 	}
 	
 	
 	function toTable($tableName) {
-		if(empty($this->_csvArray) and empty($this->_csvHandle)) throw new csvToTableException('A csv has to be read before calling ::toTable');
-		if(!empty($table)) $this -> __tableName = $table;
+		if($this->_debug) $this->_debuggingTool(__FUNCTION__, $this->_csvArray);
+		if(empty($this->_csvArray) and empty($this->_csvHandle))
+			throw new csvToTableException('A csv has to be read before calling ::toTable');
+		if(!empty($tableName)) $this -> _tableName = $tableName;
+		$this->_createTable();
 		return $this->_CsvDataToTable();
 	}
 	
+	/*
 	function _DB_Connection($dbType='mysql', $dbHost='localhost', $dbName, $dbUser, $dbPass, $dbPort='3660') {
-		$this->_dbSettings['type'] = strtolower($dbType);
-		$this->_dbSettings['host'] = $dbHost;
-		$this->_dbSettings['dbname'] = $dbName;
-		$this->_dbSettings['dbuser'] = $dbUser;
-		$this->_dbSettings['dbpass'] = $dbPass;
-		$this->_dbSettings['dbport'] = $dbPort;
-		switch($this->_dbSettings) {
-			case 'mysql':
-				$this->_DB_connObject = $this->_DB_connMysql();
-				return $this->_DB_connObject;
-		}
-	}
+			$this->_dbSettings['type'] = strtolower($dbType);
+			$this->_dbSettings['host'] = $dbHost;
+			$this->_dbSettings['dbname'] = $dbName;
+			$this->_dbSettings['dbuser'] = $dbUser;
+			$this->_dbSettings['dbpass'] = $dbPass;
+			$this->_dbSettings['dbport'] = $dbPort;
+			switch($this->_dbSettings) {
+				case 'mysql':
+					$this->_DB_connObject = $this->_DB_connMysql();
+					return $this->_DB_connObject;
+			}
+		}*/
+	
 	
 	
 	function DB_SetConnectionObject($connectionObject, $dbType='mysql') {
@@ -155,7 +170,8 @@ class csvToTable {
 	}
 
 	
-	function __debuggingTool($caller, $objectTo_debug) {
+	function _debuggingTool($caller, $objectTo_debug) {
+		if(!$this->_debug) return;
 		echo $caller;
 		echo "\n";	
 		print_r($objectTo_debug);
@@ -165,7 +181,7 @@ class csvToTable {
 	function _openCsv($csvFile) {
 		if(file_exists($csvFile) && ( ($handle = fopen($csvFile, "r")) !== FALSE) ) {
 			$this->_csvHandle = $handle;
-			if($this->_debug) $this->__debuggingTool(__FUNCTION__,$handle);
+			if($this->_debug) $this->_debuggingTool(__FUNCTION__,$handle);
 			return $this->_csvHandle;
 		}
 		throw new csvToTableException;
@@ -176,7 +192,7 @@ class csvToTable {
 		foreach($rows as $row) {
 			$this->_csvArray[] = str_getcsv($row, $this->_DELIMITER, $this->_ENCLOSURE, $this->_ESCAPE);			
 		}
-		if($this->_debug) $this->__debuggingTool(__FUNCTION__, $this->_csvArray);
+		if($this->_debug) $this->_debuggingTool(__FUNCTION__, $this->_csvArray);
 		if(!empty($this->_csvArray)) return $this->_csvArray;
 		return False;
 	}
@@ -192,17 +208,21 @@ class csvToTable {
 		for($i=1; $i<count($columns); $i++) {
 			$colNames[] = 'col_'.$i;
 		}
-		return $colNames;
+		$this->_columnNames = $colNames;
+		return $this->_columnNames;
 	}
 
 	function _getColumnNamesFromCsv() {
 		$columns = $this->_getCsvLine();
-
-		// mysql names can't have dots
-		foreach($columns as &$column) {
-			$column = str_replace(".", "", $column);
+		$this->_debuggingTool(__FUNCTION__, $columns);
+		// sql names can't have dots
+		if(!empty($columns)) {
+			foreach($columns as &$column) {
+				$this->_columnNames[] = str_replace(".", "", $column);
+			}
+			return $this->_columnNames;
 		}
-		return $columns or FALSE;
+		 return FALSE;		
 	}
 
 	
@@ -213,32 +233,122 @@ class csvToTable {
 							$this -> _DELIMITER, $this -> _ENCLOSURE, 
 							$this -> _ESCAPE);
 		elseif(!empty($this->_csvArray)) {
-			if($this->_debug) $this->__debuggingTool(__FUNCTION__, __LINE__);
+			if($this->_debug) $this->_debuggingTool(__FUNCTION__. __LINE__, $this->_csvArray);
 			return array_shift($this->_csvArray);
 		}
 		else {
-			if($this->_debug) $this->__debuggingTool(__FUNCTION__ . __LINE__, $this->_csvArray);
 			return NULL;
 		}
 	}
+	
+	function _createTable() {
+		$this->_dropTable();
+		$createSql = 'CREATE TABLE '. $this->_tableName .' (';
+		$createSql .= join(' varchar(255), ', $this->_columnNames);
+		$createSql .= ' varchar(255) );';
+		return $this->executeSql($createSql);
+	}
+	
+	function _dropTable() {
+		$dropSQL = 'DROP TABLE '.$this->_tableName;
+		$this->_debuggingTool(__FUNCTION__, $dropSQL);
+		return $this->executeSql($dropSQL);
+	}
+	
+	function executeSql($sql) {
+		if( !is_resource($this->_DB_connObject) ) return False;
+		if($this->_DB_prepareQueryObject) {
+			$prepareQueryObject =$this->_DB_prepareQueryObject;
+			$sql = $prepareQueryObject($sql);
+		}		
+		$execQueryObject = $this->_DB_execQueryObject;
+		
+		return $execQueryObject($sql);
+	}
 
+	function quoteValue($value) {
+		if(!is_string($value)) return;
+		if(substr($value, 0, 1)!=='\'') $value = '\''.$value;
+		if(substr($value,count($value)-2, 1) !== '\'') $value = $value.'\'';			
+		return $value;
+	}
 
 	function _CsvDataToTable() {
 		$errors = 0;
-		if($this->_debug) $this->__debuggingTool(__FUNCTION__, $this->_getCsvLine());
-		
-		while( ($values = $this->_getCsvLine()) !== NULL ) {
-			while( count($values) < count($this->_getColumnNames()) ) array_push($values, NULL);
-			$insertSql = $this->_DB_sql_insert_row($this->_getColumnNames(), $values);
-			if($this->_debug) $this->__debuggingTool(__FUNCTION__, $insertSql);	
-			$preparedQuery = $this->_DB_prepareQueryObject( $insertSql );
-			if($this->_debug) $this->__debuggingTool(__FUNCTION__, $preparedQuery);	
-			if ( !$this->_DB_execQueryObject($preparedQuery) ) $errors++;
+		while( ($values = $this->_getCsvLine()) != False ) {
+			foreach($values as &$val) $val = $this->quoteValue($val);
+			while( count($values) < count($this->_columnNames) ) array_push($values, NULL);
+			
+			$insertSql = $this->_DB_sql_insert_row($this->_columnNames, $values);
+			$this->_debuggingTool(__FUNCTION__.__LINE__, $insertSql);
+			$result = $this->executeSql($insertSql);
+			if( !$result ) {
+				$errors++;
+				$this->_debuggingTool(__FUNCTION__.__LINE__,$result);
+			}
 		}
 		if( $errors>0 ) return $errors;
 		else return True;
 	}
 
+}
+
+class dbWrapper {
+	/**
+	 * db connection wrapper
+	 */
+	var $_dbConn;
+	/**
+	 * db prepare query wrapper
+	 */
+	var $_dbQuery;
+	/**
+	 * db execute query wrapper
+	 */
+	var $_dbExec;	
+	
+	function dbWrapper() {}
+	
+	function setDbConnection($connection) {
+		$this->_dbConn = $connection;
+	}
+	
+	function setDbQueryObject($queryObject) {
+		$this->_dbQuery = $queryObject;		
+	}
+	
+	function setDbExecQueryObject($execObject) {
+		$this->_dbExec = $execObject;
+	}
+	
+	function _prepareQuery($query) {
+		$queryObject = $this->_dbQuery;
+		return $queryObject($query, $this->_dbConn);
+	}
+	
+	function executeQuery($query) {
+		$preparedQuery = $this->_prepareQuery($query);
+		$exec = $this->_dbExec;
+		return $exec($preparedQuery, $this->_dbConn);		 
+	}
+}
+
+class joomlaDb extends dbWrapper {
+	
+	function joomlaDb() {
+		parent::dbWrapper();
+	}
+	
+	function _prepareQuery($query) {
+		$queryObject = $this->_dbQuery;
+		return $queryObject($query);
+	}
+	
+	function executeQuery($query) {
+		$preparedQuery = $this->_prepareQuery($query);
+		$exec = $this->_dbExec;
+		return $exec($query);
+	}
 }
 
 class csvToTableException extends Exception {
