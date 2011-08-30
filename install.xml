@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <install version="1.5" type="component" method="upgrade">
-    <name>CSV To Table</name>
+    <name>Subida CSV Numeros Serie</name>
     <author>AJweb.eu</author>
     <creationDate>July 2011</creationDate>
     <copyright>(c) Angel Justo 2011</copyright>
@@ -8,15 +8,15 @@
     <authorEmail></authorEmail>
     <authorUrl>http://ajweb.eu</authorUrl>
     <version>1.0.0</version>
-    <description>Upload CSV To Table</description>
+    <description>Subida CSV Numeros Serie para Shadow Stealth</description>
 
     <administration>
-        <files folder="administrator/components/com_csvtotable">
-            <filename>csvtotable.php</filename>
+        <files folder="administrator/components/com_subidacsvnumerosserie">
+            <filename>subidacsvnumerosserie.php</filename>
             <filename>controller.php</filename>
-
+			<folder>lib</folder>
             <folder>views</folder>
         </files>
-        <menu>Csv To Table</menu>
+        <menu>Subida Numeros Serie Shadow</menu>
     </administration>
 </install>
