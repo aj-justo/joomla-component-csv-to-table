@@ -23,6 +23,26 @@ defined( '_JEXEC' ) or die( 'Restricted access' );
 		<input type="submit" value="Upload" />
 	</form>
 	
+	<?php
+		if( !empty($this->rows) ):
+	?>
+	<h3 style="margin-top: 2em;">Muestra de las primeras 50 filas subidas:</h3>
+	<table style="border-collapse: collapse; margin-top: 1em; border:1px solid #666" >
+		<tr>
+		<?php foreach($this->rows[0] as $k=>$v): ?>		
+			<th style="padding: 0.5em; background-color: #ccc; border: 1px solid #999"><?php print $k ?></th>		
+		<?php endforeach; ?>
+		</tr>
+		
+		<?php foreach( $this->rows as $row ): ?>			
+			<tr>
+				<?php foreach( $row as $k=>$v ): ?>
+					<td style="padding: 0.5em; border: 1px solid #999" ><?php print $v ?></td>
+				<?php endforeach; ?>
+			</tr>
+		<?php endforeach; ?>
+	</table>
+	<?php endif; ?>
 
 </body>
 </html>

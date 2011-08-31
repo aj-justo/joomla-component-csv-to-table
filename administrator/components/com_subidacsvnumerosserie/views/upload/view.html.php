@@ -18,9 +18,11 @@ class subidacsvnumerosserieViewUpload extends JView
     	JToolBarHelper::title( 'CsvToTable v' . CSVTOTABLE_VERSION );
         $bar = & JToolBar::getInstance('toolbar');
 		
-        $greeting = "Hello, World!";
-		$this->assignRef( 'greeting', $greeting );
+        $model = &$this->getModel();
 
+		$rows = $model->getFirstRows();
+
+		$this->assignRef( 'rows', $rows );
         parent::display($tpl);
     }
 }
