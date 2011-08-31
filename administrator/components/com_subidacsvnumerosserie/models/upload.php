@@ -10,7 +10,7 @@ jimport( 'joomla.application.component.model' );
  * @package    Joomla.Tutorials
  * @subpackage Components
  */
-class SubidanumerosserieModelRows extends JModel
+class subidacsvnumerosserieModelUpload extends JModel
 {
     var $rowsLimit = 50;
 	var $table     = 'csvtotable';  
@@ -24,10 +24,11 @@ class SubidanumerosserieModelRows extends JModel
 		// get first x rows from the table 
 		$rowsSQL = 'SELECT * FROM '.$this->table.' LIMIT '.$this->rowsLimit;
 		$rowsQuery = mysql_query($rowsSQL);
-          
-		if( !$rowsQuery ) return False;
 
-		$rowsArray = mysql_fetch_assoc($rowsQuery);
+		//if( !$rowsQuery ) return False;
+
+		$rowsArray = array();
+		while( $row = mysql_fetch_assoc($rowsQuery) ) $rowsArray[]=$row;		
 		return $rowsArray;
     }
 }
