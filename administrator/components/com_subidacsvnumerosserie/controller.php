@@ -15,13 +15,16 @@ defined( '_JEXEC' ) or die( 'Restricted access' );
 jimport('joomla.application.component.controller');
 
 class subidacsvnumerosserieController extends JController{
-
+	
+	var $table     = 'csvtotable';
+	
     function display() {
 		//JRequest::getCmd(var, default value *, get or post * )
     	$viewName	= JRequest::getCmd( 'view', 'upload' );
         $viewLayout = JRequest::getCmd( 'layout', 'default' );
 		
-
+		
+				
 		
 		$file = JRequest::getVar('csvfile', null, 'files', 'array');
 		if($file) {
@@ -31,9 +34,11 @@ class subidacsvnumerosserieController extends JController{
 			$src = $file['tmp_name'];
 			require 'lib/csvToTable.class.php';
 			$csvToTable = new csvToTable();
-			 $JConfig = new JConfig;
+			
+			$JConfig = new JConfig;
 			$connectionObject = mysql_connect($JConfig->host, $JConfig->user, $JConfig->password);
 			mysql_select_db($JConfig->db, $connectionObject);
+			
 			$csvToTable->DB_SetConnectionObject($connectionObject);
 			
 			//$queryObject = '$connectionObject->setQuery';
@@ -43,14 +48,9 @@ class subidacsvnumerosserieController extends JController{
 			$csvToTable->DB_setExecQueryObject($execQueryObject);	
 			
 			$csvToTable->readCsv($src, $hasColNames=true);
-			$csvToTable->toTable('test');			
+			$csvToTable->toTable($this->table);			
 		}
 		
-          
-		//Set up the source and destination of the file
-		
-		//$dest = JPATH_ROOT.BI_IMAGE_BASE."myfile.jpg";
-		//JFile::upload($src, $dest);
 		
 		 // get the view & set the layout
         $view = & $this->getView( $viewName,  'html');
