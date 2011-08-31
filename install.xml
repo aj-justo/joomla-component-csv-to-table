@@ -16,7 +16,7 @@
             <filename>controller.php</filename>
 			<folder>lib</folder>
             <folder>views</folder>
-            <folder>models</foder>
+            <folder>models</folder>
         </files>
         <menu>Subida Numeros Serie Shadow</menu>
     </administration>
